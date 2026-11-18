@@ -5,7 +5,7 @@ A Krillion-inspired trivia game where you write the prompts. Set a question, its
 Open `index.html` in any browser. No install or build step needed.
 
 ## How it works
-1. Open the menu (☰) or **Edit prompts** and choose how many prompts (1–20) and how many seconds each gets (15, 25, 45 or no timer).
+1. Open the ☰ menu in the top-left corner and choose how many prompts (1–20) and how many seconds each gets (15, 25, 45 or no timer).
 2. For each prompt, enter the question, the one accepted answer, and its rarity.
 3. Press **Begin dive** and hand it to a player.
 
