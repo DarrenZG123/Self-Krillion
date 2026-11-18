@@ -49,6 +49,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 /* ---- krill ---- */
 #krill{position:fixed;z-index:12;width:48px;height:42px;left:28px;top:66%;transition:left 1.4s cubic-bezier(.4,0,.2,1),top 1.4s cubic-bezier(.4,0,.2,1);filter:drop-shadow(0 0 8px rgba(255,60,90,.9))}
 #krill.away{opacity:0}
+#krill.gold{filter:drop-shadow(0 0 10px rgba(255,210,63,.95)) drop-shadow(0 0 22px rgba(255,210,63,.5))}
+#krill.turn{animation:turngold 1s ease-out}
+@keyframes turngold{0%{transform:scale(1)}30%{transform:scale(1.6);filter:brightness(2.4) drop-shadow(0 0 30px #ffd23f)}100%{transform:scale(1)}}
 #krill svg{animation:bob 2.4s ease-in-out infinite;display:block}
 @keyframes bob{50%{transform:translateY(-6px) rotate(-6deg)}}
 /* ---- HUD ---- */
@@ -117,8 +120,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #reveal.show{display:flex}
 #rvIcon{height:64px;display:grid;place-items:center;animation:float 2.6s ease-in-out infinite;filter:drop-shadow(0 0 12px var(--tc))}
 @keyframes float{50%{transform:translateY(-8px)}}
-#rvTier{font-size:clamp(30px,6vw,46px);color:var(--tc);text-shadow:0 0 18px var(--tc);margin:14px 0 10px;letter-spacing:.22em}
-#rvTier span{display:inline-block;animation:flick .7s steps(2) both}
+#rvTier{font-size:clamp(26px,6vw,46px);color:var(--tc);text-shadow:0 0 18px var(--tc);margin:14px 0 10px;letter-spacing:.22em}
+#rvTier .wd{display:inline-block;white-space:nowrap}
+#rvTier i{font-style:normal;display:inline-block;animation:flick .7s steps(2) both}
 @keyframes flick{0%{opacity:0}40%{opacity:1}60%{opacity:.2}100%{opacity:1}}
 #rvAns{font-size:18px}
 #rvPts{font-size:17px;margin-top:10px;font-weight:700}
@@ -230,7 +234,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   <p id="startSub"></p>
   <div class="btns">
     <button class="bigbtn" id="beginBtn">Begin dive</button>
-    <button class="textbtn" id="editBtn1">Edit prompts</button>
   </div>
 </div>
 
@@ -276,7 +279,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     {name:'Schooler',          pts:30,  c:'#5fe3ee', icon:'fish',  line:'You swam with a smaller crowd.'},
     {name:'Rare',              pts:60,  c:'#ff4e5e', icon:'squid', line:'Hardly anyone says that one.'},
     {name:'Deep Cut',          pts:85,  c:'#a993ff', icon:'angler',line:'Down where the light gives up.'},
-    {name:'One in a Krillion', pts:100, c:'#ffd84a', icon:'krill', line:'Nobody else got there.'}
+    {name:'One in a Krillion', pts:100, c:'#ffd84a', icon:'gold', line:'Nobody else got there.'}
   ];
   const M_PER_PT = 10, S = 2;           // metres per point, pixels per metre
   const TOLERANCE = 0.2, MAX_Q = 20;
@@ -383,6 +386,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     cloud:{pal:{X:'#ffffff'}, rows:['....XXXX......','..XXXXXXXX.XX.','.XXXXXXXXXXXXX','XXXXXXXXXXXXXX']},
     sil:{pal:{X:'#0b1a2a'}, rows:['....XXXX.....','..XXXXXXXX..X','.X.XXXXXXXXXX','XXXXXXXXXXXXX','.XXXXXXXXXXXX','..XXXXXXX...X','....XXX......']}
   };
+  // golden krill for One in a Krillion: same shape, gold palette
+  SPR.gold = {rows: SPR.krill.rows, pal:{a:'#ffe58a',R:'#ffd23f',D:'#c9961a',L:'#fff6c4',E:'#3a2805'}};
   // fit a sprite inside a square box, whatever its shape
   const spriteH = (name, box, mono) => { const r = SPR[name].rows; return sprite(name, box / Math.max(r.length, ...r.map(x => x.length)), mono); };
   // mono: optional single colour to paint every pixel (silhouettes, greyed-out icons)
@@ -394,7 +399,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     }));
     return `<svg viewBox="0 0 ${w} ${h}" width="${(w*px).toFixed(1)}" height="${(h*px).toFixed(1)}" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
   }
-  $('krill').innerHTML = sprite('krill', 2);
+  function setKrillGold(on){ const k = $('krill'); k.innerHTML = sprite(on ? 'gold' : 'krill', 2); k.classList.toggle('gold', on); }
+  setKrillGold(false);
   $('ckKrill').innerHTML = sprite('krill', 3);
 
   // ================= matching =================
@@ -612,6 +618,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     $('scoreV').dataset.v = 0; $('scoreV').textContent = '0'; setDepthHud(0);
     mode = 'play'; anchor(); drawSquares();
     $('tlines').innerHTML = '';
+    setKrillGold(false);
     $('krill').classList.remove('away');
     await tweenCam(0, 2800);
     busy = false;
@@ -691,6 +698,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
       await tweenCam(depth + dist, 1800 + dist * 3.5);
       depth += dist;
       const hit = $('tlines').querySelector(`[data-i="${p.t}"]`); if (hit) hit.classList.add('hit');
+      if (p.t === TIERS.length - 1){
+        setKrillGold(true);
+        const k = $('krill'); k.classList.remove('turn'); void k.offsetWidth; k.classList.add('turn');
+        const r = k.getBoundingClientRect(); puff(40, r.left + 24, r.top + 20, 80);
+      }
       countScore(score());
       puff(30, innerWidth / 2, innerHeight * .4 + 20, 120);
       await wait(700);
@@ -707,7 +719,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     $('reveal').style.setProperty('--tc', tc);
     $('rvIcon').innerHTML = ok ? spriteH(t.icon, 80) : spriteH('krill', 80, '#8aa3b8');
     const name = ok ? t.name : 'Out of air';
-    $('rvTier').innerHTML = [...name].map((ch, i) => `<span style="animation-delay:${.2 + i*.05}s">${ch === ' ' ? '&nbsp;' : esc(ch)}</span>`).join('');
+    let li = 0;   // letters flicker in one by one; words never break apart
+    $('rvTier').innerHTML = name.split(' ').map(word => `<span class="wd">${[...word].map(ch => `<i style="animation-delay:${.2 + (li++)*.05}s">${esc(ch)}</i>`).join('')}</span>`).join(' ');
     $('rvAns').textContent = `“${p.a}”`;
     $('rvPts').innerHTML = ok ? `<em>+${t.pts} PTS</em> · sink ${fmt(t.pts * M_PER_PT)}m` : `<em>+0 PTS</em> · the answer was ${esc(TIERS[p.t].name)}`;
     $('rvLine').textContent = ok ? t.line : 'The clock ran out before you dove.';
@@ -848,7 +861,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     buildWorld(); placeCam(); drawSquares(); startSub(); showOv('start', true);
   });
   $('menuBtn').addEventListener('click', openSetup);
-  $('editBtn1').addEventListener('click', openSetup);
   $('beginBtn').addEventListener('click', begin);
   addEventListener('keydown', e => { if (e.key === 'Escape' && $('setup').classList.contains('show') && !prompts.some(p => !p.q.trim() || !normalize(p.a||''))) $('setupForm').requestSubmit(); });
 
